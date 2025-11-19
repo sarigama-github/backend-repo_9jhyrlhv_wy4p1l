@@ -1,48 +1,76 @@
 """
-Database Schemas
+Database Schemas for Assmat Pro
 
-Define your MongoDB collection schemas here using Pydantic models.
-These schemas are used for data validation in your application.
-
-Each Pydantic model represents a collection in your database.
-Model name is converted to lowercase for the collection name:
-- User -> "user" collection
-- Product -> "product" collection
-- BlogPost -> "blogs" collection
+Each Pydantic model maps to a MongoDB collection using its lowercase class name.
 """
 
-from pydantic import BaseModel, Field
-from typing import Optional
+from pydantic import BaseModel, Field, EmailStr
+from typing import Optional, List, Literal
+from datetime import date
 
-# Example schemas (replace with your own):
+Role = Literal["parent", "assistant"]
 
 class User(BaseModel):
     """
     Users collection schema
-    Collection name: "user" (lowercase of class name)
+    Collection: "user"
     """
     name: str = Field(..., description="Full name")
-    email: str = Field(..., description="Email address")
-    address: str = Field(..., description="Address")
-    age: Optional[int] = Field(None, ge=0, le=120, description="Age in years")
+    email: EmailStr = Field(..., description="Email address")
+    role: Role = Field(..., description="User role: parent or assistant")
+    avatar_url: Optional[str] = Field(None, description="Profile image URL")
+    provider: Optional[str] = Field(None, description="Auth provider (google/apple/facebook)")
+    phone: Optional[str] = Field(None, description="Phone number")
+    city: Optional[str] = Field(None, description="City of residence")
+    bio: Optional[str] = Field(None, description="Short description/bio")
     is_active: bool = Field(True, description="Whether user is active")
 
-class Product(BaseModel):
+class Announcement(BaseModel):
     """
-    Products collection schema
-    Collection name: "product" (lowercase of class name)
+    Announcements for matching parents and assistants
+    Collection: "announcement"
     """
-    title: str = Field(..., description="Product title")
-    description: Optional[str] = Field(None, description="Product description")
-    price: float = Field(..., ge=0, description="Price in dollars")
-    category: str = Field(..., description="Product category")
-    in_stock: bool = Field(True, description="Whether product is in stock")
+    title: str = Field(..., description="Title")
+    description: str = Field(..., description="Description")
+    author_email: EmailStr = Field(..., description="Owner email")
+    author_role: Role = Field(..., description="Role of author")
+    city: Optional[str] = Field(None, description="City")
+    availability: Optional[str] = Field(None, description="Availability notes")
 
-# Add your own schemas here:
-# --------------------------------------------------
+class Contract(BaseModel):
+    """
+    Employment contract data
+    Collection: "contract"
+    """
+    parent_email: EmailStr
+    assistant_email: EmailStr
+    child_name: str
+    start_date: date
+    hours_per_week: float = Field(..., ge=0)
+    hourly_rate: float = Field(..., ge=0)
+    paid_vacation_days: int = Field(25, ge=0)
+    notes: Optional[str] = None
 
-# Note: The Flames database viewer will automatically:
-# 1. Read these schemas from GET /schema endpoint
-# 2. Use them for document validation when creating/editing
-# 3. Handle all database operations (CRUD) directly
-# 4. You don't need to create any database endpoints!
+class ScheduleEntry(BaseModel):
+    """
+    Weekly planning entries
+    Collection: "scheduleentry"
+    """
+    user_email: EmailStr
+    weekday: Literal["monday","tuesday","wednesday","thursday","friday","saturday","sunday"]
+    start_time: str = Field(..., description="HH:MM")
+    end_time: str = Field(..., description="HH:MM")
+    note: Optional[str] = None
+
+# Additional simple calculator request models
+class SalaryCalc(BaseModel):
+    hours: float
+    rate: float
+
+class LeaveCalc(BaseModel):
+    accrued_days: float
+    days_taken: float
+
+class BalanceCalc(BaseModel):
+    credits: float
+    debits: float
